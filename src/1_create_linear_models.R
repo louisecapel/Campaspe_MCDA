@@ -8,7 +8,9 @@
 
 set.seed(76)
 
-#data required for the modelling
+source("src/package_loading.R")
+
+#data required for the modeling
 dl_unempt <- read.csv(("data/mthly_dam_levels_unempt.csv"), na.strings = "NA")
 grain <- read.csv("data/yearly_grain_production.csv")
 
@@ -155,19 +157,23 @@ summary(mdl_2yr_canola)
 model.frame(mdl_2yr_poly_avg_crops)
 
 #Plot model results against historical data
+
+#Extract fitted values and add NA to the first 3 values as the model is lagged and therefore
+#the fitted values and historic values are different lengths 
+
 fitted_values <- fitted(mdl_2yr_poly_avg_crops)
-fitted_values <- as.data.frame(fitted_values)
-historic_values <- as.data.frame(yr_dl_unempt$unemployment_rate)
-historic_values$year <- yr_dl_unempt$year
-historic_values <- as.data.frame(historic_values[-c(1:3), ])
-historic_values <- rename(historic_values[-c(1:3), ], historic_values)
+fitted_values <- as.numeric(fitted_values)
+fitted_values <- c(rep(NA, 3), fitted_values)
 
-fitted_v_historic <- cbind(fitted_values, historic_values)
-fitted_v_historic$year <- c(1993:2013)
+historic_unemployment <- yr_dl_unempt$unemployment_rate
+year <- as.numeric(yr_dl_unempt$year)
 
-model_plot <- ggplot(fitted_v_historic, aes(year, fitted_values)) +
-  geom_point() +
-  geom_smooth() +
-  geom_smooth(aes(year, historic_values[-c(1:3), ]))
+model_comparison <- as.data.frame(cbind(year, historic_unemployment, fitted_values))
 
+model_plot <- ggplot(model_comparison, aes(year, fitted_values)) +
+  geom_line(linetype = "dashed") + 
+  geom_line(aes(year, historic_unemployment)) +
+  xlab("Year") + ylab("Unemployment rate") + 
+  ggtitle("Historic and fitted unemployment values")
+    
 model_plot
